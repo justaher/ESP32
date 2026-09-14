@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.next/
+.wrangler/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+*-adminsdk-*.json
+service-account*.json
+coverage/
+*.log
+firmware/**/secrets.h

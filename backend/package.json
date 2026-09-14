@@ -1,0 +1,23 @@
+{
+  "name": "powergrid-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "test": "node --test",
+    "simulate": "node --env-file-if-exists=.env scripts/simulate.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "firebase-admin": "^14.4.0",
+    "helmet": "^8.1.0",
+    "zod": "^4.1.0"
+  }
+}
