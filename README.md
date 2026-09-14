@@ -1,6 +1,8 @@
 # PowerGrid — Giám sát tủ điện ESP32
 
-Web tiếng Việt, giao diện xanh đậm/cam. Tách **frontend React/TypeScript**, **backend Node.js/Express**, **Firebase Authentication + Cloud Firestore**, firmware ESP32.
+Web tiếng Việt, giao diện nền sáng, thẻ trắng, điểm nhấn xanh ngọc/cam. Tách **frontend React/TypeScript**, **backend Node.js/Express**, **Firebase Authentication + Cloud Firestore**, firmware ESP32.
+
+**Người nhận code từ Git:** xem [Hướng dẫn bàn giao và kết nối ESP32](docs/BAN_GIAO.md) để chạy từ đầu trên máy khác.
 
 ## Chạy giao diện ngay
 
@@ -18,6 +20,7 @@ Mở địa chỉ Local trong terminal (mặc định `http://localhost:3000`). 
 - Đăng ký, đăng nhập/đăng xuất email và mật khẩu Firebase; đặt lại mật khẩu. Đăng ký thành công tự đăng nhập.
 - Tổng quan điện năng hôm nay/tháng này, công suất thiết bị trực tuyến, cảnh báo chưa xử lý.
 - Hai tủ chiếu sáng/động lực: chọn tủ → sơ đồ/danh sách thiết bị → thông số chi tiết.
+- Sơ đồ thiết bị thật lấy từ Firestore, không cố định ba thiết bị/tủ. ESP32 khai báo thiết bị trước khi gửi số liệu; thiết bị mới xuất hiện khi web đồng bộ. Ba thiết bị/tủ chỉ là dữ liệu demo.
 - Điện áp, dòng điện, công suất, kWh hôm nay/tích lũy; tần số, hệ số công suất, nhiệt độ nếu có cảm biến.
 - Biểu đồ và bảng điện năng tuần/tháng/năm, chọn thời gian, xuất CSV.
 - Tìm thiết bị/sự cố, lọc trạng thái, lưu ghi chú xử lý và người xử lý.
@@ -81,7 +84,7 @@ Chưa có thông tin cảm biến thật nên firmware là **mẫu ESP32 + PZEM-
 5. Cho ESP32 truy cập máy trong LAN: backend `HOST=0.0.0.0`, firmware `http://<IP-LAN-máy-tính>:4000/api/telemetry`. Cho phép cổng 4000 trên mạng riêng nếu firewall chặn. `localhost` trên ESP32 không phải máy tính.
 6. HTTPS cần CA phù hợp trong `ROOT_CA`. Khi đưa lên Internet dùng HTTPS cho cả frontend/backend và đặt `FRONTEND_ORIGIN` đúng frontend.
 7. Sketch gửi một deviceId. Dùng nhiều ESP32 hoặc mở rộng gateway đọc nhiều cảm biến và gửi từng deviceId. Muốn số liệu từng thiết bị phải đo riêng từng nhánh; công tơ tổng không tự tách tiêu thụ từng thiết bị.
-8. Chỉnh tên, `ratedPowerW` và ngưỡng trong `backend/src/catalog.js` theo thiết bị thật. Mặc định ngưỡng mẫu 230 V một pha.
+8. Điền tên, `CABINET_ID`, `DEVICE_TYPE`, `RATED_POWER_W` và ngưỡng trong `secrets.h` theo thiết bị thật. Nếu đã có secrets.h từ bản cũ, bổ sung các trường mới theo `secrets.example.h`. Firmware gọi `/api/devices/register` khi khởi động rồi mới gửi số liệu. Danh mục thật lưu ở Firestore `devices`; phần exampleDevices trong catalog chỉ phục vụ test/mô phỏng.
 
 Không reset bộ đếm kWh sau mỗi lần gửi. Mẫu đầu lập mốc; từ mẫu thứ hai bắt đầu tính điện năng. Thiết bị được coi là mất kết nối sau 60 giây không có dữ liệu mới. Firmware không điều khiển relay hoặc đóng/cắt tải.
 

@@ -355,8 +355,27 @@ select {
 }
 .device-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 23px;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 0;
+  margin-top: 30px;
+  border-left: 1px solid #637d5e;
+}
+.device-branch {
+  position: relative;
+  padding: 22px 12px 12px 24px;
+}
+.device-branch:before {
+  content: "";
+  position: absolute;
+  top: 52px;
+  left: 0;
+  width: 24px;
+  height: 1px;
+  background: #637d5e;
+}
+.device-branch .device-card {
+  width: 100%;
+  height: 100%;
 }
 .device-card {
   border: 1px solid #37503c;
@@ -365,15 +384,6 @@ select {
   background: #142b20;
   text-align: left;
   position: relative;
-}
-.device-card:nth-child(2):before {
-  content: "";
-  height: 30px;
-  width: 1px;
-  background: #637d5e;
-  position: absolute;
-  top: -31px;
-  left: 50%;
 }
 .device-card.has-issue {
   border-color: #85633d;

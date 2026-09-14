@@ -12,6 +12,7 @@
 
 PZEM004Tv30 pzem(Serial2, PZEM_RX_PIN, PZEM_TX_PIN);
 String bootId, pendingPayload;
+bool deviceRegistered = false;
 unsigned long sequence = 0, lastAttempt = 0, pendingCreated = 0;
 constexpr unsigned long INTERVAL_MS = 10000;
 
@@ -53,29 +54,58 @@ bool prepareSample() {
   return true;
 }
 
-void sendPending() {
+int postJson(const String &url, const String &payload) {
   WiFiClient plainClient;
   WiFiClientSecure secureClient;
   HTTPClient http;
   bool started;
-  if (String(API_URL).startsWith("https://")) {
-    if (strlen(ROOT_CA) == 0) { Serial.println("Configure ROOT_CA for HTTPS."); return; }
+  if (url.startsWith("https://")) {
+    if (strlen(ROOT_CA) == 0) { Serial.println("Configure ROOT_CA for HTTPS."); return -1; }
     secureClient.setCACert(ROOT_CA);
-    started = http.begin(secureClient, API_URL);
+    started = http.begin(secureClient, url);
   } else {
-    started = http.begin(plainClient, API_URL); // Local trusted LAN development only.
+    started = http.begin(plainClient, url); // Local trusted LAN development only.
   }
-  if (!started) { Serial.println("Could not start HTTP request."); return; }
+  if (!started) { Serial.println("Could not start HTTP request."); return -1; }
   http.setConnectTimeout(5000);
   http.setTimeout(5000);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Key", DEVICE_KEY);
-  int status = http.POST(pendingPayload);
+  int status = http.POST(payload);
+  http.end();
+  return status;
+}
+
+bool registerDevice() {
+  String url = API_URL;
+  if (!url.endsWith("/api/telemetry")) { Serial.println("API_URL must end with /api/telemetry"); return false; }
+  url.remove(url.length() - String("/api/telemetry").length());
+  url += "/api/devices/register";
+  JsonDocument doc;
+  doc["id"] = DEVICE_ID;
+  doc["name"] = DEVICE_NAME;
+  doc["cabinetId"] = CABINET_ID;
+  doc["type"] = DEVICE_TYPE;
+  doc["ratedPowerW"] = RATED_POWER_W;
+  doc["thresholds"]["minVoltage"] = MIN_VOLTAGE;
+  doc["thresholds"]["maxVoltage"] = MAX_VOLTAGE;
+  doc["thresholds"]["maxCurrent"] = MAX_CURRENT;
+  doc["thresholds"]["maxTemperature"] = MAX_TEMPERATURE;
+  String payload;
+  serializeJson(doc, payload);
+  int status = postJson(url, payload);
+  Serial.printf("Registration HTTP status: %d\n", status);
+  if (status == 409) Serial.println("Device ID already exists with different configuration.");
+  return status == 200 || status == 201;
+}
+
+void sendPending() {
+  int status = postJson(API_URL, pendingPayload);
   Serial.printf("Telemetry HTTP status: %d\n", status);
   // A lost response is retried with the SAME sampleId so the backend can deduplicate.
   if ((status >= 200 && status < 300) || status == 400 || status == 409) pendingPayload = "";
   if (status == 401) Serial.println("Check DEVICE_ID / DEVICE_KEY on device and server.");
-  http.end();
+  if (status == 409) deviceRegistered = false;
 }
 
 void setup() {
@@ -92,6 +122,7 @@ void loop() {
   if (millis() - lastAttempt < INTERVAL_MS) { delay(20); return; }
   lastAttempt = millis();
   if (WiFi.status() != WL_CONNECTED) { WiFi.reconnect(); return; }
+  if (!deviceRegistered) { deviceRegistered = registerDevice(); if (!deviceRegistered) return; }
   // Discard stale queued sample; next cumulative reading establishes continuity or a documented gap.
   if (pendingPayload.length() && millis() - pendingCreated > 9 * 60 * 1000) pendingPayload = "";
   if (!pendingPayload.length() && !prepareSample()) return;

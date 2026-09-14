@@ -3,7 +3,8 @@ import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { cabinets, devices } from "./catalog.js";
+import { cabinets } from "./catalog.js";
+import { deviceDefinition } from "./registry.js";
 import {
   telemetrySchema,
   localDay,
@@ -40,6 +41,38 @@ export function createApp({
   app.get("/health", (_, res) =>
     res.json({ status: "ok", service: "powergrid-api" }),
   );
+  function validDeviceKey(id, submitted) {
+    const key = Object.hasOwn(deviceKeys, id) ? deviceKeys[id] : null;
+    const hash = (s) => createHash("sha256").update(s).digest();
+    return (
+      typeof key === "string" &&
+      timingSafeEqual(hash(key), hash(submitted || ""))
+    );
+  }
+  // A provisioned device announces its identity before sending measurements.
+  app.post("/api/devices/register", async (req, res) => {
+    const parsed = deviceDefinition.safeParse(req.body);
+    if (!parsed.success)
+      return res
+        .status(400)
+        .json({
+          error: "Khai báo thiết bị không hợp lệ",
+          details: parsed.error.issues,
+        });
+    if (!validDeviceKey(parsed.data.id, req.get("x-device-key")))
+      return res.status(401).json({ error: "Khóa thiết bị không hợp lệ" });
+    const result = await store.registerDevice(parsed.data);
+    if (result === "conflict")
+      return res
+        .status(409)
+        .json({
+          error:
+            "ID đã đăng ký với cấu hình khác. Kiểm tra khai báo hoặc cập nhật cấu hình trong Firestore.",
+        });
+    res
+      .status(result === "created" ? 201 : 200)
+      .json({ ok: true, status: result });
+  });
   app.post("/api/telemetry", async (req, res) => {
     const result = telemetrySchema.safeParse(req.body);
     if (!result.success)
@@ -47,13 +80,17 @@ export function createApp({
         error: "Dữ liệu đo không hợp lệ",
         details: result.error.issues,
       });
-    const sample = result.data,
-      device = devices.find((d) => d.id === sample.deviceId),
-      key = deviceKeys[sample.deviceId];
-    const submitted = req.get("x-device-key") || "";
-    const hash = (s) => createHash("sha256").update(s).digest();
-    if (!device || !key || !timingSafeEqual(hash(key), hash(submitted)))
+    const sample = result.data;
+    if (!validDeviceKey(sample.deviceId, req.get("x-device-key")))
       return res.status(401).json({ error: "Khóa thiết bị không hợp lệ" });
+    const device = await store.getDevice(sample.deviceId);
+    if (!device)
+      return res
+        .status(409)
+        .json({
+          error: "DEVICE_NOT_REGISTERED",
+          message: "Gọi /api/devices/register trước khi gửi số liệu.",
+        });
     if (Math.abs(Date.now() - Date.parse(sample.timestamp)) > 600000)
       return res
         .status(400)
@@ -87,6 +124,7 @@ export function createApp({
     next();
   });
   app.get("/api/bootstrap", async (req, res) => {
+    const devices = await store.listDevices();
     const today = localDay();
     const data = await store.snapshot(today);
     res.json({
@@ -124,6 +162,7 @@ export function createApp({
     });
   });
   app.get("/api/energy", async (req, res) => {
+    const devices = await store.listDevices();
     const period = req.query.period || "week",
       anchor = req.query.anchor || localDay();
     let range;
