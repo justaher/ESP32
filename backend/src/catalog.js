@@ -12,7 +12,8 @@ export const cabinets = [
     description: "Hệ thống bơm & thông gió",
   },
 ];
-export const devices = [
+// Test/simulator examples only. Live devices are registered in Firestore, never seeded automatically.
+export const exampleDevices = [
   {
     id: "light-a",
     cabinetId: "cabinet-1",

@@ -713,29 +713,50 @@ export default function Home() {
                   <section className="panel schematic">
                     <div className="section-title">
                       <h2>Sơ đồ thiết bị</h2>
-                      <span>Chọn thiết bị để xem thông số</span>
+                      <span>
+                        {cabinetDevices.length} thiết bị{" "}
+                        {demo ? "minh họa" : "đã khai báo"} · Chọn để xem thông
+                        số
+                      </span>
                     </div>
                     <div className="bus-source">
                       <Server size={23} />
                       <strong>{cabinet.name}</strong>
                       <small>ESP32 · Giám sát phụ tải</small>
                     </div>
-                    <div className="bus-line" />
-                    <div className="device-grid">
-                      {cabinetDevices.map((d) => (
-                        <DeviceCard
-                          key={d.id}
-                          device={d}
-                          daily={data.dailyByDevice[d.id]}
-                          issues={
-                            openIncidents.filter((i) => i.deviceId === d.id)
-                              .length
-                          }
-                          stale={!!error}
-                          onClick={() => setSelectedId(d.id)}
-                        />
-                      ))}
-                    </div>
+                    {cabinetDevices.length === 0 ? (
+                      <div className="empty">
+                        Tủ chưa có thiết bị được khai báo. Thiết bị sẽ xuất hiện
+                        sau khi ESP32 đăng ký với hệ thống.
+                      </div>
+                    ) : (
+                      <div
+                        className="device-grid"
+                        aria-label={`Thiết bị thuộc ${cabinet.name}`}
+                      >
+                        {cabinetDevices.map((d) => (
+                          <div className="device-branch" key={d.id}>
+                            <DeviceCard
+                              device={d}
+                              daily={data.dailyByDevice[d.id]}
+                              issues={
+                                openIncidents.filter((i) => i.deviceId === d.id)
+                                  .length
+                              }
+                              stale={!!error}
+                              onClick={() => setSelectedId(d.id)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!demo && (
+                      <p className="chart-note">
+                        Sơ đồ phân nhóm theo tủ đã khai báo trên thiết bị, không
+                        phải bản vẽ đấu nối điện. Thiết bị mất kết nối vẫn được
+                        giữ trên sơ đồ.
+                      </p>
+                    )}
                   </section>
                   <div className="section-title">
                     <h2>Danh sách thiết bị</h2>

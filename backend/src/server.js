@@ -3,7 +3,6 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { createApp } from "./app.js";
 import { firestoreStore } from "./store.js";
-import { devices } from "./catalog.js";
 
 for (const key of [
   "FIREBASE_PROJECT_ID",
@@ -24,7 +23,7 @@ if (accessMode === "allowlist" && !allowedEmails.length)
 const deviceKeys = JSON.parse(process.env.DEVICE_KEYS_JSON);
 for (const [id, key] of Object.entries(deviceKeys))
   if (
-    !devices.some((d) => d.id === id) ||
+    !/^[a-z0-9-]{1,50}$/.test(id) ||
     typeof key !== "string" ||
     key.length < 32 ||
     key.startsWith("replace-")

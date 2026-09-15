@@ -1,7 +1,37 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { energyDelta, detectedFaults } from "./domain.js";
+import { deviceDefinition } from "./registry.js";
+import { isDeepStrictEqual } from "node:util";
 export function firestoreStore(db) {
   return {
+    async listDevices() {
+      const snapshot = await db.collection("devices").get();
+      return snapshot.docs
+        .map((doc) => deviceDefinition.parse({ ...doc.data(), id: doc.id }))
+        .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+    },
+    async getDevice(id) {
+      const doc = await db.collection("devices").doc(id).get();
+      return doc.exists
+        ? deviceDefinition.parse({ ...doc.data(), id: doc.id })
+        : null;
+    },
+    async registerDevice(definition) {
+      const data = deviceDefinition.parse(definition);
+      const ref = db.collection("devices").doc(data.id);
+      return db.runTransaction(async (tx) => {
+        const existing = await tx.get(ref);
+        if (existing.exists)
+          return isDeepStrictEqual(
+            deviceDefinition.parse(existing.data()),
+            data,
+          )
+            ? "existing"
+            : "conflict";
+        tx.set(ref, data);
+        return "created";
+      });
+    },
     async ingest(sample, device) {
       const readingRef = db.collection("readings").doc(sample.deviceId);
       const sampleRef = db

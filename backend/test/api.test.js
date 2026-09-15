@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createApp } from "../src/app.js";
+import { exampleDevices as devices } from "../src/catalog.js";
 const key = "test-device-key-with-at-least-32-characters";
 test("registered mode admits new email accounts but rejects missing or invalid tokens and anonymous accounts", async (t) => {
   const app = createApp({
     store: {
+      listDevices: async () => [],
       snapshot: async () => ({ readings: [], incidents: [], days: [] }),
       resolve: async () => "ok",
     },
@@ -53,6 +55,8 @@ test("registered mode admits new email accounts but rejects missing or invalid t
 test("API protects data, validates ingestion, enforces resolution and preserves missing data", async (t) => {
   let ingested = 0;
   const store = {
+    listDevices: async () => devices,
+    getDevice: async (id) => devices.find((d) => d.id === id),
     ingest: async () => {
       ingested++;
       return { accepted: true };

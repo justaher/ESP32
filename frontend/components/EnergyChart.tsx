@@ -32,13 +32,13 @@ export function EnergyChart({
           margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
         >
           <CartesianGrid
-            stroke="#274035"
+            stroke="#e3ebf2"
             vertical={false}
             strokeDasharray="3 5"
           />
           <XAxis
             dataKey="date"
-            stroke="#83a392"
+            stroke="#6c8195"
             fontSize={10}
             tickLine={false}
             axisLine={false}
@@ -50,19 +50,19 @@ export function EnergyChart({
             minTickGap={18}
           />
           <YAxis
-            stroke="#83a392"
+            stroke="#6c8195"
             fontSize={10}
             tickLine={false}
             axisLine={false}
           />
           <Tooltip
             contentStyle={{
-              background: "#132c21",
-              border: "1px solid #456150",
+              background: "#ffffff",
+              border: "1px solid #d5e0ea",
               borderRadius: 8,
-              color: "#e3eee6",
+              color: "#20334a",
             }}
-            cursor={{ fill: "#294d342f" }}
+            cursor={{ fill: "#eaf2f980" }}
             formatter={(v) => [
               `${Number(v).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} kWh`,
             ]}
@@ -72,7 +72,7 @@ export function EnergyChart({
             <Bar
               dataKey="total"
               name="Thiết bị đang chọn"
-              fill="#8fc6a8"
+              fill="#369d98"
               radius={[3, 3, 0, 0]}
             />
           ) : (
@@ -80,13 +80,13 @@ export function EnergyChart({
               <Bar
                 dataKey="cabinet1"
                 name="Tủ chiếu sáng"
-                fill="#85baa0"
+                fill="#369d98"
                 radius={[3, 3, 0, 0]}
               />
               <Bar
                 dataKey="cabinet2"
                 name="Tủ động lực"
-                fill="#e5ad68"
+                fill="#edaa61"
                 radius={[3, 3, 0, 0]}
               />
             </>
